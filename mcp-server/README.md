@@ -1,46 +1,168 @@
-# Exercise 1 · MCP server
 
-Your hand-written MCP server lives in this folder. Write it in any language you like. The full task is on the exercise page; this file is the short version plus your notes.
+# Exercise 1 - MCP Server
 
-## What is already here
+**Student:** Metehan Güdücü
+**Faculty Number:** 273223008
+**Course:** Web Development
+**University:** Technical University of Sofia
 
-| File | What it is |
-|---|---|
-| `lectures.json` | The course lectures. Your first tool reads this file. |
-| `messages.jsonl` | The messages a client sends, in order, with what your server must answer. |
-| `check.mjs` | The self-check. It starts your server, sends those messages and tells you what is wrong. |
+## Project Overview
 
-## The two tools
+In this exercise, I implemented a Model Context Protocol (MCP) server using JavaScript and Node.js.
 
-1. **`find_lecture`**: everyone writes this one. Input: `number` (1 to 10). It returns the title and topics of that lecture from `lectures.json`. A number outside the range is not a crash and not a protocol error: it is a result with `isError: true` and a readable message.
-2. **One of your own**: anything useful that reads local data. Give it a description a model can choose by. Every tool needs one: the self-check applies the same rule to all of them, because a description is the only thing a model reads when it decides what to call.
+The server communicates with clients using JSON-RPC 2.0 messages through standard input and standard output.
 
-## Where this goes next
+The main goal was to understand how an MCP server handles initialization, tool discovery, tool execution, and error responses.
 
-Do not throw this folder away after Exercise 1. From Exercise 3 it becomes **your project's own MCP server**: the same protocol loop, with the tools rewired from `lectures.json` to your real data. Its tools call exactly the same service functions your HTTP routes call, so a tool obeys the same rules an API request does, and it carries a user (the `MCP_TOKEN` in `.env.example`) so it may do what that person may do and no more.
+## Project Files
 
-That is the whole design, and it is one sentence: **one set of rules, two front doors.** An MCP tool that writes its own database query is a second way into your data with none of your rules on it, and Exercise 5 is very good at finding those.
+- `server.js` - My MCP server implementation.
+- `lectures.json` - Contains information about the course lectures.
+- `messages.jsonl` - Contains example client messages.
+- `check.mjs` - Automated self-check for the server.
 
-Add an `mcp` script to `package.json` (`"mcp": "node mcp-server/server.js"`) so your agent, CI and the lecturer can all start the server the same way.
+## Implemented Features
 
-## Run the self-check
+My server supports the following operations:
+
+1. `initialize` - Establishes communication with the MCP client.
+2. `notifications/initialized` - Handles the initialization notification without sending a response.
+3. `tools/list` - Returns the available tools and their descriptions.
+4. `tools/call` - Executes a requested tool.
+5. Error handling - Returns appropriate JSON-RPC errors for unsupported methods and unknown tools.
+
+## Implemented Tools
+
+### 1. find_lecture
+
+The `find_lecture` tool searches for a lecture by its number.
+
+It reads lecture information from `lectures.json` and returns the title and topics of the requested lecture.
+
+If the requested lecture does not exist, the server returns a tool result with `isError: true` instead of a JSON-RPC protocol error.
+
+### 2. list_lectures
+
+I also implemented a tool named `list_lectures`.
+
+This tool reads the lecture data and returns a list of available lectures, including their numbers and titles.
+
+It allows the client to discover the available lectures without requesting each lecture separately.
+
+## How to Start It
+
+Open the terminal in the root directory of the project.
+
+Start the MCP server with:
 
 ```bash
-node mcp-server/check.mjs -- <your start command>
-# for example
-node mcp-server/check.mjs -- node mcp-server/server.js
-node mcp-server/check.mjs -- python3 mcp-server/server.py
-# once you have added the mcp script
-node mcp-server/check.mjs -- npm run --silent mcp
+node mcp-server/server.js
 ```
 
-It prints one line per check. Fix the failures yourself: the agent may explain a message or review your handler, but it must not write the protocol code for you.
+The server waits for JSON-RPC messages through standard input and sends its responses through standard output.
 
-## How to start it
-<!-- The exact command, so the lecturer can run your server too. -->
+To run the automated self-check:
 
-## Session transcript
-<!-- Paste one full session: initialize, the reply, tools/list, one good tools/call, one that fails. -->
+```bash
+node mcp-server/check.mjs -- node mcp-server/server.js
+```
 
-## The description experiment
-<!-- Three sentences: what you changed in the description, whether the model chose the tool differently, and why you think so. -->
+## Testing and Results
+
+During development, I tested the server using the automated checker provided with the exercise.
+
+The initial implementation had several problems related to tool discovery, tool execution, and error handling.
+
+I corrected these issues and repeated the tests.
+
+**Final result: 12/12 checks passed.**
+
+The successful tests confirmed that the server correctly handles initialization, notifications, tool discovery, valid tool calls, invalid lecture requests, unknown tools, and unknown methods.
+
+
+## Session Transcript
+
+I tested my MCP server using JSON-RPC 2.0 requests through the terminal. The following examples show the requests and responses.
+
+### 1. Initialize
+
+Request:
+```json
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test-client","version":"1.0.0"}}}
+```
+
+Response:
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"metehan-mcp-server","version":"1.0.0"}}}
+```
+
+The server initialized successfully and returned its protocol version, capabilities, and server information.
+
+### 2. List Available Tools
+
+Request:
+```json
+{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
+```
+
+The server returned two available tools:
+
+- `find_lecture`: Finds a lecture by its number from 1 to 10.
+- `list_lectures`: Lists all available lectures with their numbers and titles.
+
+Both tools include descriptions and input schemas.
+
+### 3. Successful Tool Call
+
+Request:
+```json
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"find_lecture","arguments":{"number":5}}}
+```
+
+Response:
+```json
+{"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"{\"number\":5,\"title\":\"What the agent built, part 1\",\"topics\":\"HTTP, REST vs GraphQL, data modeling, ORM, layers\"}"}]}}
+```
+
+The server successfully retrieved lecture 5 from lectures.json.
+
+### 4. Lecture Not Found
+
+Request:
+```json
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"find_lecture","arguments":{"number":99}}}
+```
+
+Response:
+```json
+{"jsonrpc":"2.0","id":4,"result":{"content":[{"type":"text","text":"Lecture not found. Please enter a number from 1 to 10."}],"isError":true}}
+```
+
+The server handled the invalid lecture number by returning a tool-level error instead of crashing.
+
+### 5. Unknown Tool
+
+Request:
+```json
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"no_such_tool","arguments":{}}}
+```
+
+Response:
+```json
+{"jsonrpc":"2.0","id":5,"error":{"code":-32602,"message":"Unknown tool: no_such_tool"}}
+```
+
+The server correctly returned a JSON-RPC protocol error because the requested tool does not exist.
+
+### Test Summary
+
+The MCP server correctly handled initialization, tool discovery, successful tool execution, tool-level errors, and unknown tools.
+
+I also ran the automated checker:
+
+```bash
+node mcp-server/check.mjs -- node mcp-server/server.js
+```
+
+All 12 automated checks passed.
+
