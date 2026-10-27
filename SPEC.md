@@ -1,61 +1,74 @@
-# <Project name>
-
-<!-- Exercise 2. Write the non-goals first. Every acceptance criterion must be checkable in under a minute.
-     Keep these headings exactly as they are: the self-checks look for them by name.
-     The full target is on the course site under Resources → The course project. -->
+# Club Events – University Event Management System
 
 ## Project option
-<!-- One line: lab booking, study groups, club events, or the own project the lecturer approved. -->
+Club events
 
 ## Goals
+- Allow students to discover and register for university club events with instant capacity tracking and confirmation.
+- Allow club organizers to create, manage, and broadcast events to student members with attendance tracking.
 
 ## Non-goals
+- Payment processing or ticket fee collection (all university club events are free).
+- Real-time chat or direct messaging between event attendees.
+- External public ticketing outside the university domain.
 
 ## Constraints
+- All users must authenticate with a valid university email address.
+- Event capacity is strictly enforced; overbooking is prohibited by transactional concurrency checks.
 
 ## The model feature
-<!-- Which model, which modality, and what it does for a user.
-     Name three things or the check fails: the input it receives, the output it produces,
-     and what happens when the model is slow, rate-limited or wrong. -->
-- Model:
-- Input:
-- Output:
-- When it fails:
+- Model: Google Gemini API (via `@google/genai`)
+- Input: Student's past registered event categories, club memberships, and current date.
+- Output: A JSON-formatted list of personalized event recommendations with short rationale text.
+- When it fails: If the model provider times out (>3 seconds), returns a rate-limit error (429), or fails due to network issues, the system catches the exception, logs a warning, falls back to trending/upcoming events, and displays a friendly banner: "AI recommendations currently unavailable; showing popular events instead."
 
 ## Auth
-<!-- Local sign-in plus at least one provider. Say how an account signing in both ways stays one account. -->
-- Local:
-- Provider:
-- Linking:
+- Local: Email and password authentication with secure password hashing (bcrypt).
+- Provider: Google OAuth (`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`).
+- Linking: When a user signs in via Google OAuth, the system checks if an account with the same email already exists. If so, the Google identity is linked to the existing user account seamlessly.
 
 ## MCP tools
-<!-- At least three tools your own MCP server exposes over this project's data.
-     Each tool calls the same service functions the HTTP API calls, so the same rules apply.
-     A description shorter than 20 characters is not a description. -->
 | Tool | What it does | Who may call it |
 | --- | --- | --- |
-|  |  |  |
+| `list_club_events` | Returns a list of all upcoming university club events with current registration counts. | Any authenticated user or student |
+| `register_event` | Registers the calling user for a specified event ID, checking capacity constraints. | Any student member |
+| `recommend_events` | Generates AI-powered event recommendations based on user interests and attendance history. | Any authenticated student |
 
 ## UI
-<!-- Stack, and the three or more screens. The graded checklist lives in docs/UI.md. -->
+- Stack: Node.js, Express, SQLite, and vanilla HTML/CSS/JavaScript with responsive layout and clear states.
+- Screens:
+  1. **Events Dashboard:** Browse, search, and filter upcoming club events.
+  2. **Event Details & Registration Screen:** View full event description, location, organizer, capacity status, and register/cancel attendance.
+  3. **Organizer Management Console:** Create, update, and manage club events and view attendee lists.
+  4. **Authentication Screen:** Sign in / sign up via local credentials or Google OAuth.
 
 ## Architecture
-<!-- Exercise 3. One request traced through every layer, naming the file for each one,
-     plus one place where your own code does not match this layering. -->
+- Requests arrive via HTTP route handlers (or MCP tools) → Service Layer (contains all business rules, auth, capacity checks, and AI fallback logic) → Data Access Layer (SQL queries) → SQLite Database.
+- Layering exception: MCP tools talk directly to the shared service layer, never to the database or SQL layer.
 
 ## Acceptance criteria
-<!-- Every criterion carries an id. A test proves it by naming that id in its title, for example
-     test('AC-3 a booking that overlaps another is refused with 409', ...).
-     Say who acts, what they see, and what must be true in the database. -->
-- [AC-1] <example> A member who signs up for an event with no free places sees "This event is full", and no new row appears in `registrations`.
+- [AC-1] A student who registers for an event with available free places sees a success message and a new registration row appears in the database.
+- [AC-2] A student who attempts to register for an event with no free places sees "This event is full", and no new registration row appears in `registrations`.
+- [AC-3] A club organizer can create a new event with title, description, date, location, and maximum capacity, which immediately appears on the events list.
+- [AC-4] A student can sign up using email and password with secure password hashing.
+- [AC-5] A student can sign in using Google OAuth, and if an account with the same email already exists locally, the accounts are successfully linked.
+- [AC-6] An attendee can cancel their registration for an event up to 24 hours before the event start time, freeing up a spot in capacity.
+- [AC-7] The AI event recommendation feature accepts student attendance history and interests, and outputs personalized event recommendations.
+- [AC-8] When the AI model provider is slow (>3s), rate-limited, or down, the system catches the error, falls back to top upcoming events, and displays a non-blocking UI notification.
 
-### Slice 1: sign-in and <list screen>
+### Slice 1: sign-in and events dashboard
 
 ## Traceability
-<!-- Filled in from Exercise 3 onward: each AC id, and the test that names it. -->
 | Criterion | Test |
 | --- | --- |
 | AC-1 |  |
+| AC-2 |  |
+| AC-3 |  |
+| AC-4 |  |
+| AC-5 |  |
+| AC-6 |  |
+| AC-7 |  |
+| AC-8 |  |
 
 ## Spec vs result
-<!-- After the agent builds the slice: which criteria passed, which it missed or reinterpreted, and what you changed in this spec because of it. -->
+- (Will be updated after implementation slice delivery in Exercise 3.)
