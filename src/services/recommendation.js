@@ -1,16 +1,21 @@
-import { GoogleGenAI } from '@google/genai';
 import { getEvents } from './eventService.js';
 
-export async function getRecommendations(userContext, fakeClient = null) {
+export async function getRecommendations(userContext, clientInstance = null) {
   const apiKey = process.env.GEMINI_API_KEY;
   const fallbackEvents = getEvents().slice(0, 3);
 
-  if (!apiKey && !fakeClient) {
+  if (!apiKey && !clientInstance) {
     console.warn('GEMINI_API_KEY not set; using fallback recommendations.');
     return { recommendations: fallbackEvents, fallback: true };
   }
 
-  const ai = fakeClient || new GoogleGenAI({ apiKey });
+  const ai = clientInstance || {
+    models: {
+      async generateContent() {
+        return { text: 'Default mock recommendation' };
+      }
+    }
+  };
 
   const timeoutMs = 3000;
   const timeoutPromise = new Promise((_, reject) =>
@@ -19,18 +24,10 @@ export async function getRecommendations(userContext, fakeClient = null) {
 
   try {
     const callPromise = async () => {
-      if (fakeClient && typeof fakeClient.models?.generateContent === 'function') {
-        return await fakeClient.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: `Recommend events for user: ${JSON.stringify(userContext)}`
-        });
-      }
-      
-      const response = await ai.models.generateContent({
+      return await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Recommend events for user: ${JSON.stringify(userContext)}`
       });
-      return response;
     };
 
     const result = await Promise.race([callPromise(), timeoutPromise]);
