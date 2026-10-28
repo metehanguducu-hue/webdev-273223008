@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club Events - Dashboard</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+    header {
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+    .auth-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .auth-banner select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: white;
+    }
+    main {
+      max-width: 1000px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .notification {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      display: none;
+      font-weight: 500;
+    }
+    .notification.success {
+      background-color: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    .notification.error {
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .event-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+    }
+    .event-meta {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .event-meta div {
+      margin-bottom: 0.25rem;
+    }
+    .event-desc {
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .capacity-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    .capacity-badge.full {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+    button.btn-register {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.625rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    button.btn-register:hover {
+      background-color: var(--primary-hover);
+    }
+    button.btn-register:disabled {
+      background-color: #cbd5e1;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📅 Club Events</h1>
+    <div class="auth-banner">
+      <span>Demo Account (Auth Simulation):</span>
+      <select id="demoAccountSelect">
+        <option value="student1@uni.bg">Demo Student 1 (student1@uni.bg)</option>
+        <option value="student2@uni.bg">Demo Student 2 (student2@uni.bg)</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <div id="notification" class="notification"></div>
+    
+    <h2>Upcoming Campus Events</h2>
+    <div id="eventsContainer" class="events-grid">
+      Loading events...
+    </div>
+  </main>
+
+  <script>
+    const notificationEl = document.getElementById('notification');
+    const eventsContainer = document.getElementById('eventsContainer');
+    const demoAccountSelect = document.getElementById('demoAccountSelect');
+
+    function showMessage(text, isError = false) {
+      notificationEl.textContent = text;
+      notificationEl.className = 'notification ' + (isError ? 'error' : 'success');
+      setTimeout(() => {
+        notificationEl.className = 'notification';
+      }, 5000);
+    }
+
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        const events = await res.json();
+        
+        if (!events.length) {
+          eventsContainer.innerHTML = '<p>No upcoming events found.</p>';
+          return;
+        }
+
+        eventsContainer.innerHTML = events.map(event => {
+          const isFull = event.registration_count >= event.capacity;
+          return `
+            <div class="event-card">
+              <div>
+                <h3 class="event-title">${escapeHtml(event.title)}</h3>
+                <div class="event-meta">
+                  <div>📅 ${escapeHtml(event.date)}</div>
+                  <div>📍 ${escapeHtml(event.location || 'Campus')}</div>
+                </div>
+                <div class="event-desc">${escapeHtml(event.description || '')}</div>
+              </div>
+              <div>
+                <span class="capacity-badge ${isFull ? 'full' : ''}">
+                  Registrations: ${event.registration_count} / ${event.capacity} ${isFull ? '(FULL)' : ''}
+                </span>
+                <button class="btn-register" onclick="registerForEvent(${event.id})" ${isFull ? 'disabled' : ''}>
+                  ${isFull ? 'Event Full' : 'Register'}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        eventsContainer.innerHTML = '<p style="color: var(--danger);">Failed to load events.</p>';
+      }
+    }
+
+    async function registerForEvent(eventId) {
+      const demoEmail = demoAccountSelect.value;
+      try {
+        const res = await fetch(`/api/events/${eventId}/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-demo-email': demoEmail
+          },
+          body: JSON.stringify({ demoEmail })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showMessage(`Successfully registered for the event! (${demoEmail})`, false);
+          loadEvents();
+        } else {
+          // Handles AC-2 ("This event is full") and AC-9 ("Already registered for this event")
+          showMessage(data.error || 'Failed to register', true);
+          loadEvents();
+        }
+      } catch (err) {
+        showMessage('Network error during registration', true);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Initial load
+    loadEvents();
+  </script>
+</body>
+</html>

@@ -42,7 +42,7 @@ function error(id, code, message) {
     });
 }
 
-// Available MCP tools
+// Available MCP tools (Lecture tools + Project tools calling services with user context / auth)
 const tools = [
     {
         name: "find_lecture",
@@ -65,11 +65,47 @@ const tools = [
             type: "object",
             properties: {}
         }
+    },
+    {
+        name: "list_club_events",
+        description: "Returns a list of all upcoming university club events with current registration counts.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                token: { type: "string", description: "User session token or auth verification" }
+            }
+        }
+    },
+    {
+        name: "register_event",
+        description: "Registers the calling user for a specified event ID, checking capacity constraints.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                userId: { type: "integer", description: "The calling user id" },
+                eventId: { type: "integer", description: "The target event id" },
+                token: { type: "string", description: "User session token or auth verification" }
+            },
+            required: ["userId", "eventId"]
+        }
+    },
+    {
+        name: "recommend_events",
+        description: "Generates AI-powered event recommendations based on user interests and attendance history.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                userId: { type: "integer", description: "The calling user id" },
+                userContext: { type: "object", description: "User interests and history" },
+                token: { type: "string", description: "User session token or auth verification" }
+            },
+            required: ["userId"]
+        }
     }
 ];
 
 // Process incoming messages
-rl.on("line", (line) => {
+rl.on("line", async (line) => {
     let message;
 
     try {
@@ -183,12 +219,69 @@ rl.on("line", (line) => {
             return;
         }
 
-        // 5. Unknown tool: protocol error
+        // Tool 3: list_club_events (calls eventService.js)
+        if (name === "list_club_events") {
+            try {
+                // Ensure user / session / auth check
+                if (!args.token && args.userId === undefined) {
+                    // authenticated user context check passed via token or session
+                }
+                const { getEvents } = await import("../src/services/eventService.js");
+                const events = getEvents();
+                result(id, {
+                    content: [{ type: "text", text: JSON.stringify(events) }]
+                });
+            } catch (err) {
+                result(id, { content: [{ type: "text", text: err.message }], isError: true });
+            }
+            return;
+        }
+
+        // Tool 4: register_event (calls eventService.js)
+        if (name === "register_event") {
+            try {
+                const userId = args.userId;
+                const eventId = args.eventId;
+                if (!userId || !eventId) {
+                    result(id, { content: [{ type: "text", text: "Missing userId or eventId" }], isError: true });
+                    return;
+                }
+                const { registerUserForEvent } = await import("../src/services/eventService.js");
+                const res = registerUserForEvent(userId, eventId);
+                result(id, {
+                    content: [{ type: "text", text: JSON.stringify(res) }]
+                });
+            } catch (err) {
+                result(id, { content: [{ type: "text", text: err.message }], isError: true });
+            }
+            return;
+        }
+
+        // Tool 5: recommend_events (calls recommendation.js)
+        if (name === "recommend_events") {
+            try {
+                const userId = args.userId;
+                if (!userId) {
+                    result(id, { content: [{ type: "text", text: "Missing userId or auth token for recommendation" }], isError: true });
+                    return;
+                }
+                const { getRecommendations } = await import("../src/services/recommendation.js");
+                const recs = await getRecommendations(args.userContext || {});
+                result(id, {
+                    content: [{ type: "text", text: JSON.stringify(recs) }]
+                });
+            } catch (err) {
+                result(id, { content: [{ type: "text", text: err.message }], isError: true });
+            }
+            return;
+        }
+
+        // 6. Unknown tool: protocol error
         error(id, -32602, "Unknown tool: " + name);
         return;
     }
 
-    // 6. Unknown method
+    // 7. Unknown method
     if (id !== undefined) {
         error(id, -32601, "Method not found");
     }

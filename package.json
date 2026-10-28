@@ -2,8 +2,14 @@
   "name": "webdev-273223008",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "mcp": "node mcp-server/server.js",
-    "test": "node mcp-server/check.mjs -- node mcp-server/server.js"
+    "start": "node server.js",
+    "mcp": "node mcp-server/server.cjs",
+    "test": "node src/db/db.test.js && node src/services/eventService.test.js && node src/routes/events.test.js && node src/services/acceptanceCriteria.test.js && node src/services/recommendation.test.js && node mcp-server/check.mjs -- node mcp-server/server.cjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.31.0",
+    "express": "^5.3.0"
   }
 }

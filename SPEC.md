@@ -45,6 +45,12 @@ Club events
 ## Architecture
 - Requests arrive via HTTP route handlers (or MCP tools) → Service Layer (contains all business rules, auth, capacity checks, and AI fallback logic) → Data Access Layer (SQL queries) → SQLite Database.
 - Layering exception: MCP tools talk directly to the shared service layer, never to the database or SQL layer.
+- **Request Trace (Event Registration):** 
+  1. An HTTP POST request arrives at the route handler (`src/routes/events.js`).
+  2. The route handler authenticates the user and extracts `userId` and `eventId`.
+  3. The route handler calls the service layer function `registerUserForEvent(userId, eventId)` in `src/services/eventService.js`.
+  4. The service layer initiates an atomic database transaction (`BEGIN TRANSACTION`), checks event existence, checks for duplicate registrations (`AC-9`), verifies capacity against current registration count (`AC-2`), and executes the database insert (`AC-1`).
+  5. Upon success, the transaction is committed (`COMMIT`) and a success response status (201) is returned to the client by the route handler.
 
 ## Acceptance criteria
 - [AC-1] A student who registers for an event with available free places sees a success message and a new registration row appears in the database.
@@ -72,3 +78,31 @@ Club events
 
 ## Spec vs result
 - (Will be updated after implementation slice delivery in Exercise 3.)
+
+### Slice 3: Event registration with capacity control
+
+**Feature:** Student registration for university club events.
+
+**Goal:** Allow authenticated students to register for available club events while preventing duplicate registrations and overbooking.
+
+**Acceptance criteria:**
+
+- [AC-1] An authenticated student can register for an event with available capacity. The registration is saved in the database and a success message is displayed.
+- [AC-2] A student cannot register for an event that has reached its maximum capacity. The system returns HTTP 409 and displays "This event is full."
+- [AC-9] A student cannot register for the same event more than once. The system returns HTTP 409 without creating a duplicate registration.
+
+**Implementation requirements:**
+- Store event registrations in SQLite using a database migration.
+- Implement registration and capacity checks in the service layer.
+- Provide an API endpoint for event registration.
+- Require authentication before allowing registration.
+- Display registration results and errors in the user interface.
+- Add automated tests for successful registration, full events, and duplicate registrations.
+
+**Traceability:**
+
+| Criterion | Test |
+| --- | --- |
+| AC-1 | `src/services/eventService.test.js`, `src/routes/events.test.js` |
+| AC-2 | `src/services/eventService.test.js`, `src/routes/events.test.js` |
+| AC-9 | `src/services/eventService.test.js`, `src/routes/events.test.js` |
