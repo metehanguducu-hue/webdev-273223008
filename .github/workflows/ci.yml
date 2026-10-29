@@ -86,10 +86,10 @@ jobs:
             npm run coverage
           else
             node --test --experimental-test-coverage \
-              --test-coverage-include='src/services/**' --test-coverage-exclude='test/**' \
+              --test-coverage-include='src/services/**' --test-coverage-exclude='**/*.test.js' \
               --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100
             node --test --experimental-test-coverage \
-              --test-coverage-include='src/**' --test-coverage-exclude='test/**' \
+              --test-coverage-include='src/**' --test-coverage-exclude='**/*.test.js' \
               --test-coverage-lines=80
           fi
 
