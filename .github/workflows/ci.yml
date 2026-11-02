@@ -24,6 +24,8 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           cp .env.example .env
+          echo "GOOGLE_CLIENT_ID=ci-test-client-id" >> .env
+          echo "GOOGLE_CLIENT_SECRET=ci-test-client-secret" >> .env
           npm test
 
       - name: Set up Python
