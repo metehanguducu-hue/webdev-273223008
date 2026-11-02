@@ -1,6 +1,7 @@
 import express from 'express';
 import { registerUserForEvent, getEvents, getEventById } from '../services/eventService.js';
 import { getDb } from '../db/db.js';
+import { getRecommendations } from '../services/recommendation.js';
 
 const router = express.Router();
 
@@ -73,6 +74,16 @@ router.post('/events/:id/register', authenticateDemoUser, (req, res) => {
   } catch (err) {
     const status = err.status || 500;
     res.status(status).json({ error: err.message });
+  }
+});
+
+router.post('/recommendations', async (req, res) => {
+  try {
+    const userContext = req.body?.userContext || {};
+    const result = await getRecommendations(userContext);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get recommendations' });
   }
 });
 

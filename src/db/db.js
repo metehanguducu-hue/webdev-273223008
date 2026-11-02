@@ -7,7 +7,7 @@ let currentDbPath = null;
 
 export function getDb() {
   const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'database.sqlite');
-  
+
   if (!dbInstance || currentDbPath !== dbPath) {
     const dbDir = path.dirname(dbPath);
     if (!fs.existsSync(dbDir)) {
@@ -66,7 +66,9 @@ export function runMigrations() {
     db.prepare(`
       INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)
     `).run('student2@uni.bg', 'Demo Student 2');
-
+    db.prepare(`
+      INSERT OR IGNORE INTO users (email, name) VALUES (?, ?)
+    `).run('student3@uni.bg', 'Demo Student 3');
     // Get organizer user id
     const organizer = db.prepare('SELECT id FROM users WHERE email = ?').get('student1@uni.bg');
     if (organizer) {

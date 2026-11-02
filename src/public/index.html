@@ -9,13 +9,29 @@
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --success: #16a34a;
-      --danger: #dc2626;
+      --danger: #991b1b;
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --text: #1e293b;
       --text-muted: #64748b;
       --border: #e2e8f0;
+
+/* Spacing scale */
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 1rem;
+      --space-4: 1.5rem;
+      --space-5: 2rem;
+
+/* Typography scale */
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.125rem;
+      --text-xl: 1.25rem;
+      --text-2xl: 1.5rem;
+
     }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg);
@@ -27,7 +43,7 @@
     header {
       background-color: var(--card-bg);
       border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
+      padding: var(--space-3) var(--space-5);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -35,7 +51,7 @@
     }
     header h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-size: var(--text-2xl);
       color: var(--primary);
     }
     .auth-banner {
@@ -53,11 +69,16 @@
       border-radius: 4px;
       border: 1px solid var(--border);
       background: white;
+      .auth-banner button,
+.auth-banner select {
+    min-height: 44px;
+    min-width: 44px;
+}
     }
     main {
       max-width: 1000px;
       margin: 2rem auto;
-      padding: 0 1rem;
+      padding: 0 var(--space-3);
     }
     .notification {
       padding: 1rem;
@@ -80,7 +101,7 @@
     }
     h2 {
       margin-top: 0;
-      font-size: 1.25rem;
+      font-size: var(--text-xl);
       border-bottom: 2px solid var(--border);
       padding-bottom: 0.5rem;
     }
@@ -89,18 +110,18 @@
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 1.5rem;
     }
-    .event-card {
+      .event-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 1.5rem;
+      padding: var(--space-4);
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
     }
     .event-title {
-      font-size: 1.125rem;
+      font-size: var(--text-lg);
       font-weight: 600;
       margin: 0 0 0.5rem 0;
     }
@@ -136,6 +157,8 @@
       border: none;
       padding: 0.625rem 1rem;
       border-radius: 6px;
+      min-height: 44px;
+      min-width: 44px;
       font-weight: 500;
       cursor: pointer;
       transition: background-color 0.15s ease;
@@ -144,36 +167,143 @@
       background-color: var(--primary-hover);
     }
     button.btn-register:disabled {
-      background-color: #cbd5e1;
-      cursor: not-allowed;
-    }
+    background-color: #cbd5e1;
+    color: #1e293b;
+    cursor: not-allowed;
+}
   </style>
 </head>
 <body>
   <header>
     <h1>📅 Club Events</h1>
-    <div class="auth-banner">
-      <span>Demo Account (Auth Simulation):</span>
-      <select id="demoAccountSelect">
-        <option value="student1@uni.bg">Demo Student 1 (student1@uni.bg)</option>
-        <option value="student2@uni.bg">Demo Student 2 (student2@uni.bg)</option>
-      </select>
-    </div>
+
+<div class="auth-banner">
+  <span id="authStatus">Not signed in</span>
+  <button id="googleLoginBtn" type="button">
+    Sign in with Google
+  </button>
+  <button id="logoutBtn" type="button" hidden>
+    Sign out
+  </button>
+</div>
   </header>
 
   <main>
     <div id="notification" class="notification"></div>
-    
+
     <h2>Upcoming Campus Events</h2>
     <div id="eventsContainer" class="events-grid">
       Loading events...
     </div>
+
+<section aria-labelledby="recommendationsTitle">
+  <h2 id="recommendationsTitle">AI Event Recommendations</h2>
+  <p>Personalized suggestions powered by Gemini AI.</p>
+
+  <button id="recommendBtn" type="button">
+    Get AI Recommendations
+  </button>
+
+  <div id="recommendationsResult" role="status" aria-live="polite">
+    Click the button to get suggestions.
+  </div>
+</section>
+
   </main>
 
   <script>
+
+const recommendBtn = document.getElementById('recommendBtn');
+const recommendationsResult = document.getElementById('recommendationsResult');
+
+recommendBtn.addEventListener('click', async () => {
+  recommendBtn.disabled = true;
+  recommendationsResult.textContent = 'AI is thinking...';
+
+  try {
+    const response = await fetch('/api/recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userContext: { interests: ['Web Development', 'AI'] }
+      })
+    });
+
+    if (!response.ok) throw new Error('Request failed');
+
+    const data = await response.json();
+
+    if (data.fallback) {
+      recommendationsResult.textContent =
+        'AI is unavailable. Showing fallback event suggestions.';
+    } else {
+      recommendationsResult.textContent = 'AI suggestions (not verified facts):';
+    }
+
+    const details = document.createElement('pre');
+    details.textContent = data.raw ||
+      JSON.stringify(data.recommendations, null, 2);
+    recommendationsResult.appendChild(details);
+
+  } catch (error) {
+    recommendationsResult.textContent =
+      'Could not load AI recommendations. Please try again.';
+  } finally {
+    recommendBtn.disabled = false;
+  }
+});
+
     const notificationEl = document.getElementById('notification');
     const eventsContainer = document.getElementById('eventsContainer');
-    const demoAccountSelect = document.getElementById('demoAccountSelect');
+    const authStatus = document.getElementById('authStatus');
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+googleLoginBtn.addEventListener('click', () => {
+  window.location.href = '/auth/google';
+});
+
+    const logoutBtn = document.getElementById('logoutBtn');
+
+logoutBtn.addEventListener('click', async () => {
+  try {
+    const response = await fetch('/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin'
+    });
+
+    if (!response.ok) {
+      throw new Error('Logout failed');
+    }
+
+    await checkAuth();
+    await loadEvents();
+  } catch (error) {
+    console.error('Logout failed:', error);
+    alert('Could not sign out. Please try again.');
+  }
+});
+
+async function checkAuth() {
+  try {
+    const response = await fetch('/auth/me');
+    if (!response.ok) throw new Error('Auth check failed');
+
+    const data = await response.json();
+
+    if (data.user) {
+      authStatus.textContent = `Signed in as ${data.user.name}`;
+      googleLoginBtn.hidden = true;
+      logoutBtn.hidden = false;
+    } else {
+      authStatus.textContent = 'Not signed in';
+      googleLoginBtn.hidden = false;
+      logoutBtn.hidden = true;
+    }
+  } catch (error) {
+    console.error('Authentication check failed:', error);
+  }
+}
+
+checkAuth();
 
     function showMessage(text, isError = false) {
       notificationEl.textContent = text;
@@ -185,9 +315,11 @@
 
     async function loadEvents() {
       try {
+        eventsContainer.innerHTML = '<p>Loading events...</p>';
+
         const res = await fetch('/api/events');
         const events = await res.json();
-        
+
         if (!events.length) {
           eventsContainer.innerHTML = '<p>No upcoming events found.</p>';
           return;
@@ -222,7 +354,7 @@
     }
 
     async function registerForEvent(eventId) {
-      const demoEmail = demoAccountSelect.value;
+      const demoEmail = 'student4@uni.bg';
       try {
         const res = await fetch(`/api/events/${eventId}/register`, {
           method: 'POST',

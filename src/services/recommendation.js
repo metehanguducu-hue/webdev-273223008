@@ -1,4 +1,5 @@
 import { getEvents } from './eventService.js';
+import { GoogleGenAI } from '@google/genai';
 
 export async function getRecommendations(userContext, clientInstance = null) {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -8,24 +9,17 @@ export async function getRecommendations(userContext, clientInstance = null) {
     console.warn('GEMINI_API_KEY not set; using fallback recommendations.');
     return { recommendations: fallbackEvents, fallback: true };
   }
+  const ai = clientInstance || new GoogleGenAI({ apiKey });
 
-  const ai = clientInstance || {
-    models: {
-      async generateContent() {
-        return { text: 'Default mock recommendation' };
-      }
-    }
-  };
-
-  const timeoutMs = 3000;
+  const timeoutMs = 15000;
   const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Gemini API timeout (>3s)')), timeoutMs)
+    setTimeout(() => reject(new Error('Gemini API timeout (>15s)')), timeoutMs)
   );
 
   try {
     const callPromise = async () => {
       return await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.5-flash-lite',
         contents: `Recommend events for user: ${JSON.stringify(userContext)}`
       });
     };

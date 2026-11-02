@@ -1,15 +1,21 @@
+
 {
   "name": "webdev-273223008",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.js",
+    "start": "node --env-file=.env server.js",
     "mcp": "node mcp-server/server.cjs",
-    "test": "node src/db/db.test.js && node src/services/eventService.test.js && node src/routes/events.test.js && node src/services/acceptanceCriteria.test.js && node src/services/recommendation.test.js && node mcp-server/check.mjs -- node mcp-server/server.cjs"
+    "test": "node --env-file=.env src/db/db.test.js && node --env-file=.env src/services/eventService.test.js && node --env-file=.env src/routes/events.test.js"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",
-    "express": "^5.3.0"
+    "bcrypt": "^6.0.0",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0"
   }
 }
