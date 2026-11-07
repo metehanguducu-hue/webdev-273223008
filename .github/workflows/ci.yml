@@ -91,7 +91,7 @@ jobs:
           if node -e "process.exit(require('./package.json').scripts?.coverage ? 0 : 1)"; then
             npm run coverage
           else
-            node --test --experimental-test-coverage \
+            node --env-file=.env --test --experimental-test-coverage \
               --test-coverage-include='src/services/**' --test-coverage-exclude='**/*.test.js' \
               --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=100
             node --test --experimental-test-coverage \
