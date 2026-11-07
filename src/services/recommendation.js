@@ -1,7 +1,7 @@
 import { getEvents } from './eventService.js';
 import { GoogleGenAI } from '@google/genai';
 
-export async function getRecommendations(userContext, clientInstance = null) {
+ export async function getRecommendations(userContext, clientInstance = null, timeoutMs = 15000) {
   const apiKey = process.env.GEMINI_API_KEY;
   const fallbackEvents = getEvents().slice(0, 3);
 
@@ -11,7 +11,6 @@ export async function getRecommendations(userContext, clientInstance = null) {
   }
   const ai = clientInstance || new GoogleGenAI({ apiKey });
 
-  const timeoutMs = 15000;
   const timeoutPromise = new Promise((_, reject) =>
     setTimeout(() => reject(new Error('Gemini API timeout (>15s)')), timeoutMs)
   );

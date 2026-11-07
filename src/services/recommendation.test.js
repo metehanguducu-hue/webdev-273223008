@@ -18,10 +18,12 @@ test('Recommendation Service: [AC-7], [AC-8] and 100% coverage', async () => {
   const resMissingKey = await getRecommendations({ interests: ['coding'] }, null);
   assert.strictEqual(resMissingKey.fallback, true, 'Should fall back when GEMINI_API_KEY is missing');
 
-  // Test 2: API key present & null client (default mock client branch)
+
+  // Test 2: API key present, but invalid (fallback expected)
   process.env.GEMINI_API_KEY = 'test-api-key';
   const resKeyPresent = await getRecommendations({ interests: ['coding'] }, null);
-  assert.strictEqual(resKeyPresent.fallback, false, 'Should use default mock client when key is present');
+  assert.strictEqual(resKeyPresent.fallback, true, 'Should fall back when the API key is invalid');
+
 
   // Test 3: Successful fake client [AC-7]
   const fakeClient = {
@@ -45,7 +47,7 @@ test('Recommendation Service: [AC-7], [AC-8] and 100% coverage', async () => {
     }
   };
 
-  const res2 = await getRecommendations({ interests: ['coding'] }, slowFakeClient);
+  const res2 = await getRecommendations({ interests: ['coding'] }, slowFakeClient, 100);
   assert.strictEqual(res2.fallback, true, '[AC-8] Should fall back on timeout');
 
   if (oldKey) {
