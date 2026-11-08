@@ -240,10 +240,23 @@ recommendBtn.addEventListener('click', async () => {
       recommendationsResult.textContent = 'AI suggestions (not verified facts):';
     }
 
-    const details = document.createElement('pre');
-    details.textContent = data.raw ||
-      JSON.stringify(data.recommendations, null, 2);
-    recommendationsResult.appendChild(details);
+   const details = document.createElement('div');
+
+details.style.whiteSpace = 'pre-wrap';
+details.style.overflowWrap = 'anywhere';
+details.style.wordBreak = 'break-word';
+details.style.maxWidth = '100%';
+details.style.lineHeight = '1.7';
+details.style.marginTop = '16px';
+
+const rawText = data.raw ||
+  JSON.stringify(data.recommendations, null, 2);
+
+details.textContent = rawText
+  .replace(/^#{1,6}\s+/gm, '')
+  .replace(/\*\*(.*?)\*\*/g, '$1');
+
+recommendationsResult.appendChild(details);
 
   } catch (error) {
     recommendationsResult.textContent =
